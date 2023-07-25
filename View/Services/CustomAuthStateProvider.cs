@@ -1,4 +1,6 @@
-﻿namespace View.Services;
+﻿using View.Options;
+
+namespace View.Services;
 
 public class CustomAuthStateProvider : AuthenticationStateProvider {
     private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(5);
@@ -6,6 +8,7 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
     private readonly ProtectedLocalStorage _local;
 
     private readonly ILogger<CustomAuthStateProvider> _logger;
+    private readonly ISessionRepository _sessionRepository;
 
     private readonly IUserRepository _userRepository;
 
@@ -15,10 +18,11 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
     private DateTime _cachedStateTime;
 
     public CustomAuthStateProvider(IUserRepository userRepository, ProtectedLocalStorage local,
-        ILogger<CustomAuthStateProvider> logger) {
+        ILogger<CustomAuthStateProvider> logger, ISessionRepository sessionRepository) {
         _userRepository = userRepository;
         _local = local;
         _logger = logger;
+        _sessionRepository = sessionRepository;
     }
 
     public User? CurrentUser { get; private set; }
@@ -54,7 +58,7 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
             return authState;
         }
         catch (CryptographicException) {
-            await _local.DeleteAsync("id");
+            await _local.DeleteAsync("token");
             return Anonymous; // token encryption has changed
         }
         catch (InvalidOperationException) {
@@ -67,10 +71,16 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
     }
 
     private async Task<User?> GetUserAsync() {
-        // auth with id
-        var id = await _local.GetAsync<int>("id");
+        var token = await _local.GetAsync<string>("token");
+        if (token is { Success: true, Value: not "" }) {
+            var id = await _sessionRepository.GetUserIdByTokenAsync(token.Value!, CancellationToken.None);
 
-        if (id is { Success: true, Value: not 0 }) return await _userRepository.AuthorizeAsync(id.Value);
+            if (id == null) return null;
+            if (!(await _sessionRepository.IsValidSessionAsync(token.Value!, id.Value, CancellationToken.None)))
+                return null;
+
+            return await _userRepository.AuthorizeAsync(id.Value, CancellationToken.None);
+        }
 
         return null;
     }
@@ -87,21 +97,30 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
     public async Task Login(User user) {
         ClearCache();
         CurrentUser = user;
+        
+        var salt = BC.GenerateSalt(8);
+        var token = BC.HashPassword(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), salt)[..50];
+
+        await _sessionRepository.CreateAsync(new Session() {
+            Token = token,
+            CreatedAt = DateTime.Now,
+            ValidUntil = DateTime.Now.Add(AuthOptions.TokenValidFor),
+            UserId = CurrentUser!.Id
+        }, CancellationToken.None);
+        
         var authState =
             new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(GenerateClaims(user), "LoginType")));
 
         SetCachedState(authState);
 
         NotifyAuthenticationStateChanged(Task.FromResult(authState));
-        await _local.SetAsync("id", user.Id);
+        await _local.SetAsync("token", token);
     }
 
     public async Task Logout() {
         CurrentUser = null;
         ClearCache();
-        await _local.DeleteAsync("id");
-        //await _local.DeleteAsync("token");
-        //await _local.DeleteAsync("login");
+        await _local.DeleteAsync("token");
         NotifyAuthenticationStateChanged(Task.FromResult(Anonymous));
     }
 }

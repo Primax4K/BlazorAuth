@@ -19,7 +19,7 @@
         <ErrorMsg @bind-Msg="_error"/>
         <SuccessMsg @bind-Msg="_success"/>
         <div @onkeydown="@TryLogin">
-            <MudForm @ref="_from">
+            <MudForm @ref="_form">
                 <MudTextField
                     T="string" Immediate="true" InputType="InputType.Text" InputMode="InputMode.text"
                     Label="Email"
@@ -53,7 +53,7 @@
 @code {
     bool _isLoggingIn;
 
-    MudForm _from = null!;
+    MudForm _form = null!;
     string? _error;
     string? _success;
 
@@ -89,7 +89,7 @@
 
     async Task HandleLoginAsync() {
         try {
-            if (!await _from.IsFormValidAsync()) return;
+            if (!await _form.IsFormValidAsync()) return;
             _error = null;
             _isLoggingIn = true;
             await UserService.LoginAsync(Model);

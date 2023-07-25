@@ -1,8 +1,19 @@
 <CascadingAuthenticationState>
+    <!--// this exposes the AuthenticationState for all our Pages/Components -->
+
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <PageTitle>Symo - template</PageTitle>
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+            <PageTitle>BlazorAuth template</PageTitle>
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    <p role="alert">Not authorized.</p>
+                </NotAuthorized>
+                <Authorizing>
+                    <MudOverlay Visible="true" DarkBackground="true">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+                    </MudOverlay>
+                </Authorizing>
+            </AuthorizeRouteView> <!--// the authorize route view to prevent anonymous user from visiting restriced pages-->
             <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
         </Found>
         <NotFound>

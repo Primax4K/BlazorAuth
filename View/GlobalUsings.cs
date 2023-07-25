@@ -2,7 +2,6 @@
 global using Domain.Repositories.Interfaces;
 global using Microsoft.AspNetCore.Components.Server.Circuits;
 global using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-global using Model.Entities;
 global using Domain.Repositories.Implementations;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Logging.Abstractions;
@@ -16,7 +15,7 @@ global using Domain.Exceptions;
 global using Microsoft.AspNetCore.Components.Authorization;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.AspNetCore.Mvc.RazorPages;
-global using Microsoft.Extensions.DependencyInjection.Extensions;
 global using Model.Entities.Auth;
 global using Model.Entities.Auth.Models;
 global using View.Services;
+global using BC = BCrypt.Net.BCrypt;

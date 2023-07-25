@@ -23,12 +23,16 @@ public class User {
     [Column("PASSWORD_HASH", TypeName = "TEXT")]
     public string PasswordHash { get; set; } = null!;
 
-    [Required] [NotMapped] [MinLength(6)] public string LoginPassword { get; set; } = null!;
+    [Required]
+    [NotMapped]
+    [MinLength(6)]
+    public string LoginPassword { get; set; } = null!;
 
 
     public List<RoleClaim> RoleClaims { get; set; } = new();
 
-    [NotMapped] public IEnumerable<string> PlainRoles => RoleClaims.Select(x => x.Role.Identifier);
+    [NotMapped]
+    public IEnumerable<string> PlainRoles => RoleClaims.Select(x => x.Role.Identifier);
 
 
     public User ClearSensitiveData() {
