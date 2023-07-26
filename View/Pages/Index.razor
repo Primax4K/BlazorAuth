@@ -33,10 +33,10 @@
     public object? DataYouLoadFromSomeWhere { get; set; }
 
     protected override async Task OnInitializedAsync() {
-        if (await UserService.IsAuthenticated()) {
+        if (UserService.IsAuthenticated()) {
     // do stuff if user is authenticated
         }
-        if (await UserService.HasRole("Admin")) {
+        if (UserService.HasRole("Admin")) {
     // do stuff if user is in role
         }
     }

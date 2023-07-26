@@ -15,17 +15,19 @@ public class UserService {
 
     public User? CurrentUser => _authenticationStateProvider.CurrentUser;
 
+    public AuthenticationState? CachedAuthState => _authenticationStateProvider.CachedState;
+
     public Task<AuthenticationState> GetAuthenticationStateAsync() =>
         _authenticationStateProvider.GetAuthenticationStateAsync();
 
-    public async Task<bool> IsAuthenticated() {
-        var identity = await _authenticationStateProvider.GetAuthenticationStateAsync();
-        return identity.User.Identity is { IsAuthenticated: true };
+    public bool IsAuthenticated() {
+        var identity = CachedAuthState?.User.Identity;
+        return identity is not null && identity.IsAuthenticated;
     }
 
-    public async Task<bool> HasRole(string role) {
-        var identity = await _authenticationStateProvider.GetAuthenticationStateAsync();
-        return identity.User.IsInRole(role);
+    public bool HasRole(params string[] roles) {
+        var claimsPrincipal = CachedAuthState?.User;
+        return claimsPrincipal is not null && roles.Any(claimsPrincipal.IsInRole);
     }
 
     public async Task RegisterAsync(User user, CancellationToken ct = default) {

@@ -11,11 +11,12 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
     private readonly ISessionRepository _sessionRepository;
 
     private readonly IUserRepository _userRepository;
-
+    private DateTime _cachedStateTime;
+    
     // cache the current AuthenticationState to avoid unnecessary calls to the server
     // the state is cached for 5 minutes
-    private AuthenticationState? _cachedState;
-    private DateTime _cachedStateTime;
+    public AuthenticationState? CachedState;
+    
 
     public CustomAuthStateProvider(IUserRepository userRepository, ProtectedLocalStorage local,
         ILogger<CustomAuthStateProvider> logger, ISessionRepository sessionRepository) {
@@ -30,20 +31,20 @@ public class CustomAuthStateProvider : AuthenticationStateProvider {
     private static AuthenticationState Anonymous => new(new ClaimsPrincipal(new ClaimsIdentity()));
 
     private void SetCachedState(AuthenticationState state) {
-        _cachedState = state;
+        CachedState = state;
         _cachedStateTime = DateTime.Now;
     }
 
     private void ClearCache() {
-        _cachedState = null;
+        CachedState = null;
         _cachedStateTime = DateTime.MaxValue;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync() {
         try {
             // caching
-            if (_cachedState is not null && DateTime.Now - _cachedStateTime < _cacheDuration)
-                return _cachedState;
+            if (CachedState is not null && DateTime.Now - _cachedStateTime < _cacheDuration)
+                return CachedState;
             ClearCache();
 
             var user = await GetUserAsync();
